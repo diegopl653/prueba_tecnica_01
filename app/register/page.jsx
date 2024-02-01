@@ -1,4 +1,43 @@
+'use client'
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase/firebase";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 function register() {
+  const [Credentials, setCredentials] = useState({
+    email: "",
+    password: "",
+  });
+
+  const push = useRouter()
+
+  const changeUser = (e) => {
+    setCredentials({
+      ...Credentials,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const registerUser = async () => {
+    try {
+      await createUserWithEmailAndPassword(
+        auth,
+        Credentials.email,
+        Credentials.password,
+      );
+      push.push('/')
+      console.log(Credentials.email, Credentials.password)
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    registerUser();
+    push.push('/');
+  }
   return (
     <div class="flex w-screen h-screen">
       <div className="hidden md:flex flex-col gap-10 md:w-1/3 w-screen bg-primary text-zinc-100 items-center justify-center">
@@ -45,8 +84,7 @@ function register() {
           <p className="text-3xl font-bold text-primary">Create Account</p>
           <p className="text-gray-500 text-sm">Create a new account</p>
           <form
-            action="/login"
-            method="POST"
+            onSubmit={handleSubmit}
             className="flex flex-col gap-10 md:px-12 px-8 relative mt-16"
           >
             <label
@@ -104,10 +142,11 @@ function register() {
               type="email"
               name="email"
               className="border-2 rounded h-10 mt-1 pl-10 font-semibold"
+              onChange={changeUser}
             />
 
             <label
-              htmlFor="email"
+              htmlFor="phone"
               className="absolute left-20 top-[168px] leading-3 text-xs px-3 bg-white text-center text-gray-400"
             >
               <svg
@@ -134,8 +173,8 @@ function register() {
               PHONE
             </label>
             <input
-              type="email"
-              name="email"
+              type="number"
+              name="phone"
               className="border-2 rounded h-10 mt-1 pl-10 font-semibold"
             />
 
@@ -165,9 +204,10 @@ function register() {
               type="password"
               name="password"
               className="border-2 rounded h-10 pl-10 font-semibold"
+              onChange={changeUser}
             />
             <label
-              htmlFor="email"
+              htmlFor="confirmpassword"
               className="absolute left-20 top-[332px] leading-3 text-xs px-3 bg-white text-center text-gray-400"
             >
               <svg
@@ -189,8 +229,8 @@ function register() {
               CONFIRM PASSWORD
             </label>
             <input
-              type="email"
-              name="email"
+              type="password"
+              name="confirmpassword"
               className="border-2 rounded h-10 mt-1 pl-10 font-semibold"
             />
             <button

@@ -1,4 +1,60 @@
-function Login() {
+'use client'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase/firebase";
+import Link from "next/link";
+import * as Yup from  "yup";
+import { useFormik } from 'formik';
+
+const schema = Yup.object().shape({
+  email:Yup.string()
+    .email("Invalid Email")
+    .required('Required'),
+})
+
+function login() {
+  const [Credentials, setCredentials] = useState({
+    email: "",
+    password: "",
+  });
+
+  const router = useRouter()
+
+  const changeUser = (e) => {
+    setCredentials({
+      ...Credentials,
+      [e.target.name]: e.target.value,
+    }); 
+  };
+
+  const loginUser = async () => {
+    try{
+      await signInWithEmailAndPassword(auth,  Credentials.email, Credentials.password);
+      alert('Finally!!')
+      router.push('/')
+    }catch (error){
+console.log(error);
+    }
+  }
+
+  const {handleChange, errors} = useFormik({
+    initialValues:{
+      email:'',
+      password:'',
+    },
+
+    validationSchema: schema,
+
+  })
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    loginUser();
+    router.push('/')
+
+  }
+
   return (
     <div class=" flex w-screen h-screen">
       <div className="hidden md:flex flex-col gap-10 w-1/3 bg-primary text-zinc-100 items-center justify-center">
@@ -48,9 +104,8 @@ function Login() {
           <p className="text-3xl font-bold text-primary">Welcome Back</p>
           <p className="text-gray-500">Sign to continue</p>
           <form
-            action="/login"
-            method="POST"
             className="flex flex-col gap-10 md:px-12 px-8 relative mt-16"
+            onSubmit={handleSubmit}
           >
             <svg
               className="absolute w-6 h-fit top-3 md:left-14 left-10"
@@ -77,11 +132,12 @@ function Login() {
             <input
               type="email"
               name="email"
-              className="border-2 rounded h-10 mt-1 pl-10 font-semibold"
+              className="border-2 rounded h-10 mt-1 pl-10 font-semibold bg-white"
+              onChange={handleChange}
             />
 
             <svg
-              className="absolute w-6 h-fit top-1/3 md:left-14 left-10"
+              className="absolute w-6 h-fit top-[92px] md:left-14 left-10"
               width="800px"
               height="800px"
               viewBox="0 0 24 24"
@@ -105,7 +161,8 @@ function Login() {
             <input
               type="password"
               name="password"
-              className="border-2 rounded h-10 pl-10 font-semibold"
+              className="border-2 rounded h-10 pl-10 font-semibold bg-white"
+              onChange={handleChange}
             />
             <a href="" className="text-primary text-end text-sm">
               Forgot Password?
@@ -116,13 +173,15 @@ function Login() {
             >
               LOGIN
             </button>
+            <br />
+            {errors.email && <span>Email invalido</span>}
           </form>
           <p className="text-xs mt-5 px-24">
             Don't have account?
-            <a href="" className="text-primary font-semibold">
+            <Link href="/register" className="text-primary font-semibold">
               {" "}
               create a new account
-            </a>
+            </Link>
           </p>
         </div>
       </div>
@@ -130,4 +189,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default login
