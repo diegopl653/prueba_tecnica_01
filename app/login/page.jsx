@@ -1,65 +1,90 @@
-'use client'
-import { useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase/firebase";
 import Link from "next/link";
-import * as Yup from  "yup";
-import { useFormik } from 'formik';
+import * as Yup from "yup";
+import { useFormik } from "formik";
+import { loginUserState } from "@/redux/authSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const schema = Yup.object().shape({
-  email:Yup.string()
-    .email("Invalid Email")
-    .required('Required'),
-})
+  email: Yup.string().email().required(),
+  password: Yup.string().min(6).required(),
+});
 
 function login() {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const dispatch = useDispatch();
+  const router = useRouter();
+
   const [Credentials, setCredentials] = useState({
     email: "",
     password: "",
   });
 
-  const router = useRouter()
-
   const changeUser = (e) => {
     setCredentials({
       ...Credentials,
       [e.target.name]: e.target.value,
-    }); 
+    });
   };
 
   const loginUser = async () => {
-    try{
-      await signInWithEmailAndPassword(auth,  Credentials.email, Credentials.password);
-      alert('Finally!!')
-      router.push('/')
-    }catch (error){
-console.log(error);
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        Credentials.email,
+        Credentials.password
+      );
+      const user = userCredential.user;
+
+      dispatch(
+        loginUserState({
+          email: user.email,
+        })
+      );
+
+      console.log("Usuario autenticado:", user);
+      window.alert("Logged-in!!");
+      router.push("/profile");
+    } catch (error) {
+      console.log(error);
     }
-  }
+  };
 
-  const {handleChange, errors} = useFormik({
-    initialValues:{
-      email:'',
-      password:'',
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/profile');
+    }
+  }, [isAuthenticated, router]);
+
+  const { handleSubmit, handleChange, errors } = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
     },
-
+    onSubmit: async () => {
+      await loginUser();
+      router.push("/profile");
+    },
+    onInput: () => {
+      changeUser();
+    },
     validationSchema: schema,
+  });
 
-  })
-
-  const handleSubmit = (event) => {
+  const handleFormSubmit = (event) => {
     event.preventDefault();
-    loginUser();
-    router.push('/')
-
-  }
+    handleSubmit();
+  };
 
   return (
     <div class=" flex w-screen h-screen">
       <div className="hidden md:flex flex-col gap-10 w-1/3 bg-primary text-zinc-100 items-center justify-center">
         <svg
-          class="w-1/4"
+          class="w-1/4 bg-repeat-cover min-h-screen"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 256.69 314.97"
           fill="#0DD2FD"
@@ -82,7 +107,7 @@ console.log(error);
       <div className="flex flex-col md:w-2/3 w-screen md:bg-zinc-100 items-center justify-center ">
         <div className="flex flex-col bg-white md:shadow-lg text-center md:rounded-2xl py-20 justify-center gap-1">
           <svg
-            class="w-2/12 mx-auto"
+            class="w-2/12 mx-auto "
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 256.69 314.97"
             fill="#0DD2FD"
@@ -105,7 +130,7 @@ console.log(error);
           <p className="text-gray-500">Sign to continue</p>
           <form
             className="flex flex-col gap-10 md:px-12 px-8 relative mt-16"
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
           >
             <svg
               className="absolute w-6 h-fit top-3 md:left-14 left-10"
@@ -124,20 +149,27 @@ console.log(error);
               />
             </svg>
             <label
+              for="email"
               htmlFor="email"
-              className="absolute left-20 leading-3 text-xs px-3 bg-white text-center text-gray-400"
+              className="absolute left-20 ml-4 leading-3 text-xs px-3 bg-white text-center text-gray-400"
             >
               EMAIL
             </label>
             <input
+              id="email"
               type="email"
               name="email"
               className="border-2 rounded h-10 mt-1 pl-10 font-semibold bg-white"
-              onChange={handleChange}
+              onInput={handleChange}
+              onChange={changeUser}
             />
-
+            {errors.email && (
+              <span className="flex justify-end -mt-10 text-red-700 font-medium">
+                {errors.email}
+              </span>
+            )}
             <svg
-              className="absolute w-6 h-fit top-[92px] md:left-14 left-10"
+              className="flex mb-[-75px] ml-2 w-6 h-fit top-[92px] md:left-14 left-10 z-20"
               width="800px"
               height="800px"
               viewBox="0 0 24 24"
@@ -153,28 +185,34 @@ console.log(error);
               />
             </svg>
             <label
+              for="password"
               htmlFor="password"
-              className="absolute left-20 top-20 leading-3 text-xs px-3 bg-white text-center text-gray-400"
+              className="flex -mb-12 z-20 w-fit ml-12 leading-3 text-xs px-3 bg-white text-center text-gray-400"
             >
               PASSWORD
             </label>
             <input
               type="password"
               name="password"
+              id="password"
               className="border-2 rounded h-10 pl-10 font-semibold bg-white"
-              onChange={handleChange}
+              onInput={handleChange}
+              onChange={changeUser}
             />
+            {errors.password && (
+              <span className="flex -mt-10 justify-end w-full mx-auto text-red-700 font-medium">
+                {errors.password}
+              </span>
+            )}
             <a href="" className="text-primary text-end text-sm">
               Forgot Password?
             </a>
             <button
               type="submit"
-              className=" bg-primary text-white tracking-widest p-4 rounded-lg"
+              className=" bg-primary text-white tracking-widest p-4 rounded-lg hover:bg-blue-950 focus:ring-2 focus:ring-sky-600 active:bg-sky-800"
             >
               LOGIN
             </button>
-            <br />
-            {errors.email && <span>Email invalido</span>}
           </form>
           <p className="text-xs mt-5 px-24">
             Don't have account?
@@ -189,4 +227,4 @@ console.log(error);
   );
 }
 
-export default login
+export default login;
